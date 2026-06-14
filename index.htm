@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimalist Gallery</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background-color: #0e0e0e; color: #ffffff; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 20px; }
+        
+        #upload-trigger { position: fixed; top: 20px; left: 20px; background: #0e0e0e; color: white; border: 1px solid #444; padding: 8px 16px; cursor: pointer; z-index: 1000; text-transform: uppercase; font-size: 12px; border-radius: 4px; }
+        #upload-trigger:hover { border-color: white; }
+
+        #login-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1a1a1a; padding: 30px; border: 1px solid #333; z-index: 2000; border-radius: 8px; color: white; text-align: center; }
+        #login-modal input { display: block; margin: 10px auto; padding: 8px; background: #0e0e0e; border: 1px solid #444; color: white; width: 200px; }
+        #login-modal button { background: #333; color: white; border: none; padding: 8px 20px; cursor: pointer; margin-top: 10px; }
+        #error-msg { color: #ff5555; font-size: 12px; margin-top: 10px; display: none; }
+
+        #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 50; }
+        nav { display: flex; justify-content: center; gap: 40px; padding: 40px 0; font-size: 14px; letter-spacing: 1px; text-transform: uppercase; z-index: 100; position: relative; }
+        .nav-item { position: relative; cursor: pointer; }
+        .nav-link { color: #eeeeee; transition: color 0.2s, font-weight 0.2s; display: block; }
+        .nav-link.active { color: #ffffff !important; font-weight: bold; }
+        .popup { display: none; position: absolute; top: 35px; left: 50%; transform: translateX(-50%); background-color: #1a1a1a; border: 1px solid #333; padding: 40px; border-radius: 4px; z-index: 100; color: white; box-shadow: 0 10px 20px rgba(0,0,0,0.5); min-width: 200px; text-align: center; white-space: nowrap; }
+        .popup::after { content: ''; position: absolute; top: -10px; left: 50%; margin-left: -10px; border-width: 0 10px 10px 10px; border-style: solid; border-color: transparent transparent #1a1a1a transparent; }
+        .popup a { color: white; text-decoration: none; }
+        .grid-container { display: grid; grid-template-columns: 2fr 1fr; grid-template-rows: auto auto auto; gap: 20px; max-width: 1200px; margin: 0 auto; }
+        .box { background-color: #1a1a1a; border: 1px solid #2d2d2d; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); border-radius: 4px; min-height: 200px; overflow: hidden; cursor: context-menu; }
+        .box img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .large-box { grid-row: span 2; }
+        .bottom-row { grid-column: span 2; display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }
+        .bottom-box { min-height: 150px; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+    <button id="upload-trigger">↑ Upload</button>
+
+    <div id="login-modal">
+        <h3>Admin Login</h3>
+        <input type="text" id="username" placeholder="Name">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="checkLogin()">Login</button>
+        <div id="error-msg">Incorrect Name or Password</div>
+    </div>
+
+    <input type="file" id="file-uploader" style="display:none" accept="image/*" onchange="handleFileUpload(event)">
+    <input type="file" id="replace-uploader" style="display:none" accept="image/*" onchange="handleReplaceImage(event)">
+
+    <div id="overlay" onclick="closeMenus()"></div>
+
+    <nav>
+        <div class="nav-item"><span id="nav-gallery" class="nav-link active" onclick="selectNav('gallery')">Gallery</span></div>
+        <div class="nav-item">
+            <span id="nav-about" class="nav-link" onclick="selectNav('about')">About</span>
+            <div id="about-popup" class="popup">CATS ARE THE BEST</div>
+        </div>
+        <div class="nav-item">
+            <span id="nav-contact" class="nav-link" onclick="selectNav('contact')">Contact</span>
+            <div id="contact-popup" class="popup">
+                <a href="https://www.facebook.com/profile.php?id=61577362712458" target="_blank">Facebook page</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="grid-container" id="main-content">
+    </div>
+
+    <script>
+        // --- Supabase Setup ---
+        const { createClient } = supabase;
+        const supabaseUrl = 'https://kgoozaizmefbvpnzwfdp.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtnb296YWl6bWVmYnZwbnp3ZmRwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzUwODUsImV4cCI6MjA5Njk1MTA4NX0.JXTaB-M02q3SDDLeS-OlkWQsQ-X6GKr7TlTyfFDKT5Y';
+        const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+        let isLoggedIn = false;
+        let activeImageElement = null;
+
+        // Load Gallery from Supabase on Startup
+        window.onload = async () => {
+            const { data, error } = await supabaseClient
+                .from('Gallery') // <-- Updated table name
+                .select('content')
+                .eq('id', 1)
+                .single();
+
+            if (data && data.content) {
+                document.getElementById('main-content').innerHTML = data.content;
+            } else {
+                if (error && error.code !== 'PGRST116') { // Ignore "Row not found" error on first load
+                    console.error("Error fetching from Supabase:", error);
+                }
+                // Default content if empty or error
+                document.getElementById('main-content').innerHTML = `
+                    <div class="box large-box"><img src="siamese-kitten.jpg" alt="Siamese kitten"></div>
+                    <div class="box"><img src="Siamese_cat_1110x740.jpg" alt="Siamese cat face"></div>
+                    <div class="box"><img src="everything-you-need-to-know-about-siamese-cats.jpg" alt="Siamese kitten"></div>
+                    <div class="bottom-row">
+                        <div class="box bottom-box"><img src="672672711_1855839085635243_345664732301362924_n.jpg" alt="Relaxing Siamese"></div>
+                        <div class="box bottom-box"><img src="ccec.jpg" alt="Black cat in car"></div>
+                    </div>`;
+            }
+        };
+
+        // Save Gallery state to Supabase
+        async function saveState() {
+            const currentHTML = document.getElementById('main-content').innerHTML;
+            const { error } = await supabaseClient
+                .from('Gallery') // <-- Updated table name
+                .upsert({ id: 1, content: currentHTML });
+            
+            if (error) {
+                console.error("Error saving state to Supabase:", error);
+                alert("Failed to save changes to the database.");
+            }
+        }
+
+        async function uploadToCloudinary(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', 'bbdbgz8i');
+            const response = await fetch('https://api.cloudinary.com/v1_1/dvdbuures/image/upload', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+            return data.secure_url;
+        }
+
+        document.getElementById('upload-trigger').addEventListener('click', () => {
+            if (isLoggedIn) {
+                document.getElementById('file-uploader').click();
+            } else {
+                document.getElementById('login-modal').style.display = 'block';
+                document.getElementById('overlay').style.display = 'block';
+            }
+        });
+
+        function checkLogin() {
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            if (user === "Reeva Briones" && pass === "7&%$#RF%$^") {
+                isLoggedIn = true;
+                document.getElementById('login-modal').style.display = 'none';
+                document.getElementById('overlay').style.display = 'none';
+                alert("Login successful!");
+            } else {
+                document.getElementById('error-msg').style.display = 'block';
+            }
+        }
+
+        document.getElementById('main-content').addEventListener('contextmenu', function(e) {
+            if (e.target.tagName === 'IMG' && isLoggedIn) {
+                e.preventDefault();
+                activeImageElement = e.target;
+                document.getElementById('replace-uploader').click();
+            }
+        });
+
+        async function handleReplaceImage(event) {
+            const file = event.target.files[0];
+            if (file && activeImageElement) {
+                const url = await uploadToCloudinary(file);
+                activeImageElement.src = url;
+                await saveState();
+            }
+        }
+
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const url = await uploadToCloudinary(file);
+                const newBox = document.createElement('div');
+                newBox.className = 'box';
+                newBox.innerHTML = `<img src="${url}" alt="Uploaded">`;
+                document.getElementById('main-content').appendChild(newBox);
+                await saveState();
+            }
+        }
+
+        function selectNav(type) {
+            document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.popup').forEach(el => el.style.display = 'none');
+            document.getElementById('overlay').style.display = 'none';
+            document.getElementById('login-modal').style.display = 'none';
+
+            if (type === 'gallery') {
+                document.getElementById('nav-gallery').classList.add('active');
+            } else if (type === 'about') {
+                document.getElementById('nav-about').classList.add('active');
+                document.getElementById('about-popup').style.display = 'block';
+                document.getElementById('overlay').style.display = 'block';
+            } else if (type === 'contact') {
+                document.getElementById('nav-contact').classList.add('active');
+                document.getElementById('contact-popup').style.display = 'block';
+                document.getElementById('overlay').style.display = 'block';
+            }
+        }
+
+        function closeMenus() {
+            selectNav('gallery');
+            document.getElementById('login-modal').style.display = 'none';
+            document.getElementById('overlay').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
