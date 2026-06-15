@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Minimalist Gallery · Ethereal Skies</title>
+    <style>
+        /* ----- RESET & BASE (preserved & enhanced) ----- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background-color: #0e0e0e;
+            color: #ffffff;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+        
+        /* ----- ORIGINAL GALLERY STYLES (untouched but refined) ----- */
+        #upload-trigger { position: fixed; top: 20px; left: 20px; background: rgba(14,14,14,0.8); backdrop-filter: blur(4px); color: white; border: 1px solid #555; padding: 8px 16px; cursor: pointer; z-index: 1000; text-transform: uppercase; font-size: 12px; border-radius: 40px; transition: all 0.2s; }
+        #upload-trigger:hover { border-color: white; background: #1a1a1a; }
+        #login-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(20,20,20,0.95); backdrop-filter: blur(12px); padding: 30px; border: 1px solid rgba(255,255,255,0.2); z-index: 2000; border-radius: 20px; color: white; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+        #login-modal input { display: block; margin: 10px auto; padding: 10px; background: #0e0e0e; border: 1px solid #555; color: white; width: 220px; border-radius: 8px; outline: none; }
+        #login-modal button { background: #2a2a2a; color: white; border: none; padding: 10px 24px; cursor: pointer; margin-top: 15px; border-radius: 40px; transition: 0.2s; }
+        #error-msg { color: #ff8888; font-size: 12px; margin-top: 10px; display: none; }
+        #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.75); backdrop-filter: blur(4px); z-index: 50; }
+        nav { display: flex; justify-content: center; gap: 40px; padding: 40px 0; font-size: 14px; letter-spacing: 1px; text-transform: uppercase; z-index: 100; position: relative; }
+        .nav-item { position: relative; cursor: pointer; }
+        .nav-link { color: #eeeeee; transition: color 0.2s, font-weight 0.2s; display: block; }
+        .nav-link.active { color: #ffffff !important; font-weight: bold; text-shadow: 0 0 6px rgba(255,255,255,0.3); }
+        .popup { display: none; position: absolute; top: 35px; left: 50%; transform: translateX(-50%); background: rgba(20,20,20,0.95); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.15); padding: 32px; border-radius: 24px; z-index: 100; color: white; box-shadow: 0 20px 35px rgba(0,0,0,0.6); min-width: 220px; text-align: center; white-space: nowrap; }
+        .popup::after { content: ''; position: absolute; top: -10px; left: 50%; margin-left: -10px; border-width: 0 10px 10px 10px; border-style: solid; border-color: transparent transparent rgba(20,20,20,0.95) transparent; }
+        .popup a { color: #ddddff; text-decoration: none; border-bottom: 1px solid #666; }
+        .grid-container { display: grid; grid-template-columns: 2fr 1fr; grid-template-rows: auto auto auto; gap: 20px; max-width: 1200px; margin: 0 auto; }
+        .box { background-color: #1a1a1a; border: 1px solid #2d2d2d; box-shadow: 0 8px 20px rgba(0,0,0,0.4); border-radius: 16px; min-height: 200px; overflow: hidden; cursor: context-menu; transition: transform 0.25s ease, box-shadow 0.3s; }
+        .box:hover { transform: scale(1.01); box-shadow: 0 20px 30px rgba(0,0,0,0.6); }
+        .box img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .large-box { grid-row: span 2; }
+        .bottom-row { grid-column: span 2; display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }
+        
+        /* ----- ENHANCED INTRO: BLURRED PREVIEW BACKGROUND + CLOUDS + BIRDS ----- */
+        .intro-sky {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 20000;
+            overflow: hidden;
+            pointer-events: auto;
+            backdrop-filter: blur(12px) brightness(0.85);
+            background-color: rgba(10, 12, 18, 0.4);
+            transition: opacity 0.4s ease;
+        }
+        
+        /* subtle animated gradient overlay for extra depth (still shows blurred bg underneath) */
+        .intro-overlay-glow {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 30% 40%, rgba(80,100,140,0.2), rgba(0,0,0,0.3));
+            pointer-events: none;
+            mix-blend-mode: overlay;
+            animation: gentlePulse 8s infinite alternate;
+        }
+        
+        @keyframes gentlePulse {
+            0% { opacity: 0.4; }
+            100% { opacity: 0.8; }
+        }
+        
+        /* cloud layers */
+        .cloud-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .cloud {
+            position: absolute;
+            background: radial-gradient(ellipse at 30% 40%, rgba(255,255,250,0.88), rgba(210,220,245,0.7));
+            border-radius: 1000px;
+            filter: blur(0.4px);
+            box-shadow: 0 20px 35px -8px rgba(0,0,0,0.2), inset 0 1px 1px rgba(255,255,255,0.5);
+            backdrop-filter: blur(2px);
+            will-change: transform, opacity;
+        }
+        
+        .cloud::before, .cloud::after {
+            content: '';
+            position: absolute;
+            background: inherit;
+            border-radius: 50%;
+            box-shadow: inherit;
+        }
+        
+        /* far, mid, front layers */
+        .cloud-far { background: radial-gradient(ellipse at 30% 35%, rgba(200,215,250,0.6), rgba(150,170,220,0.45)); backdrop-filter: blur(6px); filter: blur(1.5px); }
+        .cloud-mid { background: radial-gradient(ellipse at 35% 45%, rgba(255,250,240,0.85), rgba(210,220,245,0.7)); backdrop-filter: blur(1px); }
+        .cloud-front { background: radial-gradient(ellipse at 40% 50%, rgba(255,255,250,0.95), rgba(235,240,255,0.85)); box-shadow: 0 12px 28px -5px rgba(0,0,0,0.2); }
+        
+        /* cloud shapes & positions (rich set) */
+        .cloud-1 { width: 260px; height: 130px; top: 12%; left: -8%; }
+        .cloud-1::before { width: 110px; height: 110px; top: -45px; left: 25px; }
+        .cloud-1::after { width: 150px; height: 150px; top: -55px; left: 100px; }
+        
+        .cloud-2 { width: 340px; height: 160px; bottom: 18%; right: -5%; }
+        .cloud-2::before { width: 150px; height: 150px; top: -65px; left: 30px; }
+        .cloud-2::after { width: 120px; height: 120px; top: -35px; left: 180px; }
+        
+        .cloud-3 { width: 220px; height: 105px; top: 42%; left: 18%; }
+        .cloud-3::before { width: 95px; height: 95px; top: -35px; left: 20px; }
+        .cloud-3::after { width: 130px; height: 130px; top: -50px; left: 90px; }
+        
+        .cloud-4 { width: 380px; height: 170px; top: 68%; right: 8%; }
+        .cloud-4::before { width: 170px; height: 170px; top: -75px; left: 40px; }
+        .cloud-4::after { width: 130px; height: 130px; top: -30px; left: 210px; }
+        
+        .cloud-5 { width: 190px; height: 90px; top: 28%; right: 15%; }
+        .cloud-5::before { width: 85px; height: 85px; top: -30px; left: 15px; }
+        .cloud-5::after { width: 110px; height: 110px; top: -40px; left: 80px; }
+        
+        .cloud-6 { width: 280px; height: 125px; bottom: 8%; left: 12%; }
+        .cloud-6::before { width: 120px; height: 120px; top: -50px; left: 20px; }
+        .cloud-6::after { width: 100px; height: 100px; top: -25px; left: 150px; }
+        
+        .cloud-7 { width: 210px; height: 95px; top: 80%; left: 42%; }
+        .cloud-7::before { width: 85px; height: 85px; top: -30px; left: 20px; }
+        .cloud-7::after { width: 100px; height: 100px; top: -40px; left: 95px; }
+        
+        .cloud-8 { width: 300px; height: 140px; top: 8%; right: 28%; }
+        .cloud-8::before { width: 140px; height: 140px; top: -60px; left: 30px; }
+        .cloud-8::after { width: 110px; height: 110px; top: -20px; left: 160px; }
+        
+        .cloud-9 { width: 260px; height: 115px; bottom: 45%; left: 65%; }
+        .cloud-9::before { width: 105px; height: 105px; top: -45px; left: 25px; }
+        .cloud-9::after { width: 125px; height: 125px; top: -55px; left: 115px; }
+        
+        .cloud-10 { width: 320px; height: 150px; top: 55%; left: -3%; }
+        .cloud-10::before { width: 140px; height: 140px; top: -60px; left: 25px; }
+        .cloud-10::after { width: 160px; height: 160px; top: -70px; left: 140px; }
+        
+        /* wispy cirrus */
+        .wisp {
+            position: absolute;
+            background: rgba(255,255,245,0.3);
+            filter: blur(18px);
+            border-radius: 200px;
+            pointer-events: none;
+        }
+        .wisp-1 { width: 450px; height: 70px; top: 15%; left: -80px; background: rgba(210,220,250,0.35); filter: blur(20px); }
+        .wisp-2 { width: 600px; height: 80px; bottom: 5%; right: -120px; transform: rotate(3deg); background: rgba(190,200,240,0.25); filter: blur(28px);}
+        .wisp-3 { width: 380px; height: 60px; top: 45%; left: 35%; background: rgba(235,235,255,0.25); filter: blur(24px);}
+        
+        /* ----- MINIMALIST BIRDS (elegant silhouettes) ----- */
+        .bird {
+            position: absolute;
+            width: 40px;
+            height: 30px;
+            pointer-events: none;
+            z-index: 5;
+            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.2));
+        }
+        .bird svg {
+            width: 100%;
+            height: 100%;
+            fill: rgba(30, 35, 45, 0.75);
+            transition: fill 0.2s;
+        }
+        /* bird flight paths */
+        .bird-1 { top: 20%; left: -10%; animation: flyBird1 12s linear infinite; }
+        .bird-2 { top: 60%; left: 110%; animation: flyBird2 14s linear infinite reverse; }
+        .bird-3 { top: 40%; left: -5%; animation: flyBird3 10s ease-in-out infinite; }
+        
+        @keyframes flyBird1 {
+            0% { transform: translateX(0) translateY(0) scaleX(1); }
+            25% { transform: translateX(35vw) translateY(-30px) scaleX(1); }
+            50% { transform: translateX(70vw) translateY(10px) scaleX(1); }
+            75% { transform: translateX(105vw) translateY(-20px) scaleX(1); }
+            100% { transform: translateX(140vw) translateY(0) scaleX(1); }
+        }
+        @keyframes flyBird2 {
+            0% { transform: translateX(0) translateY(0) scaleX(-1); }
+            30% { transform: translateX(-35vw) translateY(25px) scaleX(-1); }
+            70% { transform: translateX(-75vw) translateY(-15px) scaleX(-1); }
+            100% { transform: translateX(-110vw) translateY(10px) scaleX(-1); }
+        }
+        @keyframes flyBird3 {
+            0% { transform: translateX(0) translateY(0) scaleX(1); }
+            20% { transform: translateX(20vw) translateY(-20px) scaleX(1); }
+            40% { transform: translateX(45vw) translateY(5px) scaleX(1); }
+            60% { transform: translateX(70vw) translateY(-10px) scaleX(1); }
+            80% { transform: translateX(95vw) translateY(15px) scaleX(1); }
+            100% { transform: translateX(125vw) translateY(0) scaleX(1); }
+        }
+        
+        /* float animations for clouds */
+        @keyframes floatSlow { 0% { transform: translateY(0px); } 100% { transform: translateY(-18px) translateX(6px); } }
+        @keyframes floatMid { 0% { transform: translateY(0px); } 100% { transform: translateY(14px) translateX(-8px); } }
+        @keyframes floatFast { 0% { transform: translateY(0px); } 100% { transform: translateY(-10px) translateX(5px); } }
+        .cloud { animation: floatSlow 6s infinite alternate ease-in-out; }
+        .cloud-2, .cloud-6, .cloud-9 { animation: floatMid 7s infinite alternate ease-in-out; }
+        .cloud-4, .cloud-8, .cloud-10 { animation: floatFast 5s infinite alternate ease-in-out; }
+        
+        /* split transition */
+        .cloud.splitting, .bird.splitting {
+            animation: none !important;
+            transition: transform 0.9s cubic-bezier(0.2, 0.9, 0.3, 1.2), opacity 0.8s ease-out !important;
+        }
+        .wisp.splitting {
+            transition: transform 0.9s cubic-bezier(0.2,0.9,0.4,1), opacity 0.7s ease-out !important;
+        }
+        
+        @media (max-width: 800px) {
+            .cloud { transform: scale(0.7); }
+            .bird { transform: scale(0.6); }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body style="overflow: hidden;">
+
+    <!-- INTRO OVERLAY: blurred preview of main page + clouds + birds -->
+    <div id="introSky" class="intro-sky">
+        <div class="intro-overlay-glow"></div>
+        <div class="cloud-layer">
+            <!-- far clouds -->
+            <div class="cloud cloud-far cloud-2"></div>
+            <div class="cloud cloud-far cloud-6"></div>
+            <!-- mid clouds -->
+            <div class="cloud cloud-mid cloud-1"></div>
+            <div class="cloud cloud-mid cloud-4"></div>
+            <div class="cloud cloud-mid cloud-7"></div>
+            <div class="cloud cloud-mid cloud-9"></div>
+            <!-- foreground clouds -->
+            <div class="cloud cloud-front cloud-3"></div>
+            <div class="cloud cloud-front cloud-5"></div>
+            <div class="cloud cloud-front cloud-8"></div>
+            <div class="cloud cloud-front cloud-10"></div>
+            <!-- wisps -->
+            <div class="wisp wisp-1"></div>
+            <div class="wisp wisp-2"></div>
+            <div class="wisp wisp-3"></div>
+        </div>
+        <!-- minimal birds: silhouettes adding life -->
+        <div class="bird bird-1">
+            <svg viewBox="0 0 40 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M2,15 Q10,5 20,15 Q30,5 38,15 Q30,20 20,18 Q10,20 2,15Z" fill="#2c2e3a" opacity="0.7"/>
+                <path d="M8,14 L14,12 L12,16 Z" fill="#2c2e3a"/>
+                <path d="M32,14 L26,12 L28,16 Z" fill="#2c2e3a"/>
+            </svg>
+        </div>
+        <div class="bird bird-2">
+            <svg viewBox="0 0 40 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M2,15 Q10,5 20,15 Q30,5 38,15 Q30,20 20,18 Q10,20 2,15Z" fill="#2d2f3c" opacity="0.65"/>
+            </svg>
+        </div>
+        <div class="bird bird-3">
+            <svg viewBox="0 0 36 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M1,13 Q8,4 18,13 Q28,4 35,13 Q28,18 18,16 Q8,18 1,13Z" fill="#202230" opacity="0.8"/>
+            </svg>
+        </div>
+    </div>
+
+    <!-- ORIGINAL PAGE CONTENT (gallery, nav, etc.) -->
+    <button id="upload-trigger">↑ Upload</button>
+    <div id="login-modal">
+        <h3>Admin Login</h3>
+        <input type="text" id="username" placeholder="Name">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="checkLogin()">Login</button>
+        <div id="error-msg">Incorrect Name or Password</div>
+    </div>
+    <input type="file" id="file-uploader" style="display:none" accept="image/*" onchange="handleFileUpload(event)">
+    <input type="file" id="replace-uploader" style="display:none" accept="image/*" onchange="handleReplaceImage(event)">
+    <div id="overlay" onclick="closeMenus()"></div>
+
+    <nav>
+        <div class="nav-item"><span id="nav-gallery" class="nav-link active" onclick="selectNav('gallery')">Gallery</span></div>
+        <div class="nav-item">
+            <span id="nav-about" class="nav-link" onclick="selectNav('about')">About</span>
+            <div id="about-popup" class="popup">🐱 CATS ARE THE BEST ✨</div>
+        </div>
+        <div class="nav-item">
+            <span id="nav-contact" class="nav-link" onclick="selectNav('contact')">Contact</span>
+            <div id="contact-popup" class="popup">
+                <a href="https://www.facebook.com/profile.php?id=61577362712458" target="_blank">📘 Facebook page</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="grid-container" id="main-content"></div>
+
+    <script>
+        // ----- Supabase Setup (fully functional) -----
+        const { createClient } = supabase;
+        const supabaseUrl = 'https://kgoozaizmefbvpnzwfdp.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtnb296YWl6bWVmYnZwbnp3ZmRwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzUwODUsImV4cCI6MjA5Njk1MTA4NX0.JXTaB-M02q3SDDLeS-OlkWQsQ-X6GKr7TlTyfFDKT5Y';
+        const supabaseClient = createClient(supabaseUrl, supabaseKey);
+        let isLoggedIn = false;
+        let activeImageElement = null;
+
+        async function loadGallery() {
+            const { data, error } = await supabaseClient
+                .from('Gallery')
+                .select('content')
+                .eq('id', 1)
+                .single();
+            if (data && data.content) {
+                document.getElementById('main-content').innerHTML = data.content;
+            } else {
+                if (error && error.code !== 'PGRST116') console.error(error);
+                // beautiful default cats
+                document.getElementById('main-content').innerHTML = `
+                    <div class="box large-box"><img src="https://images.pexels.com/photos/1276553/cat-whiskers-animal-feline-1276553.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Elegant cat"></div>
+                    <div class="box"><img src="https://images.pexels.com/photos/2071882/pexels-photo-2071882.jpeg?auto=compress&cs=tinysrgb&w=600" alt="Siamese gaze"></div>
+                    <div class="box"><img src="https://images.pexels.com/photos/1170986/pexels-photo-1170986.jpeg?auto=compress&cs=tinysrgb&w=600" alt="Cat lounging"></div>
+                    <div class="bottom-row">
+                        <div class="box bottom-box"><img src="https://images.pexels.com/photos/45201/kitty-cat-kitten-pet-45201.jpeg?auto=compress&cs=tinysrgb&w=600" alt="Kitten"></div>
+                        <div class="box bottom-box"><img src="https://images.pexels.com/photos/104827/cat-pet-animal-domestic-104827.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Black cat"></div>
+                    </div>`;
+            }
+        }
+        
+        async function saveState() {
+            const currentHTML = document.getElementById('main-content').innerHTML;
+            await supabaseClient.from('Gallery').upsert({ id: 1, content: currentHTML });
+        }
+
+        async function uploadToCloudinary(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', 'bbdbgz8i');
+            const response = await fetch('https://api.cloudinary.com/v1_1/dvdbuures/image/upload', { method: 'POST', body: formData });
+            const data = await response.json();
+            return data.secure_url;
+        }
+
+        document.getElementById('upload-trigger').addEventListener('click', () => {
+            if (isLoggedIn) document.getElementById('file-uploader').click();
+            else { document.getElementById('login-modal').style.display = 'block'; document.getElementById('overlay').style.display = 'block'; }
+        });
+
+        window.checkLogin = function() {
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            if (user === "Reeva Briones" && pass === "7&%$#RF%$^") {
+                isLoggedIn = true;
+                document.getElementById('login-modal').style.display = 'none';
+                document.getElementById('overlay').style.display = 'none';
+                alert("Login successful! ✨");
+            } else {
+                document.getElementById('error-msg').style.display = 'block';
+            }
+        };
+
+        document.getElementById('main-content').addEventListener('contextmenu', function(e) {
+            if (e.target.tagName === 'IMG' && isLoggedIn) {
+                e.preventDefault();
+                activeImageElement = e.target;
+                document.getElementById('replace-uploader').click();
+            }
+        });
+
+        window.handleReplaceImage = async function(event) {
+            const file = event.target.files[0];
+            if (file && activeImageElement) {
+                const url = await uploadToCloudinary(file);
+                activeImageElement.src = url;
+                await saveState();
+            }
+        };
+
+        window.handleFileUpload = async function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const url = await uploadToCloudinary(file);
+                const newBox = document.createElement('div');
+                newBox.className = 'box';
+                newBox.innerHTML = `<img src="${url}" alt="Uploaded">`;
+                document.getElementById('main-content').appendChild(newBox);
+                await saveState();
+            }
+        };
+
+        window.selectNav = function(type) {
+            document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.popup').forEach(el => el.style.display = 'none');
+            document.getElementById('overlay').style.display = 'none';
+            document.getElementById('login-modal').style.display = 'none';
+            if (type === 'gallery') {
+                document.getElementById('nav-gallery').classList.add('active');
+            } else if (type === 'about') {
+                document.getElementById('nav-about').classList.add('active');
+                document.getElementById('about-popup').style.display = 'block';
+                document.getElementById('overlay').style.display = 'block';
+            } else if (type === 'contact') {
+                document.getElementById('nav-contact').classList.add('active');
+                document.getElementById('contact-popup').style.display = 'block';
+                document.getElementById('overlay').style.display = 'block';
+            }
+        };
+
+        window.closeMenus = function() {
+            selectNav('gallery');
+            document.getElementById('login-modal').style.display = 'none';
+            document.getElementById('overlay').style.display = 'none';
+        };
+
+        // ----- SPLIT TRANSITION WITH BIRDS & CLOUDS -----
+        async function startSplitTransition() {
+            const intro = document.getElementById('introSky');
+            const clouds = Array.from(document.querySelectorAll('.intro-sky .cloud'));
+            const wisps = Array.from(document.querySelectorAll('.intro-sky .wisp'));
+            const birds = Array.from(document.querySelectorAll('.intro-sky .bird'));
+            const allMoving = [...clouds, ...wisps, ...birds];
+            
+            await new Promise(resolve => setTimeout(resolve, 2500)); // 2.5s of beauty
+            
+            // apply split directions dynamically
+            clouds.forEach(cloud => {
+                const rect = cloud.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const mid = window.innerWidth / 2;
+                let direction = centerX < mid ? 'left' : 'right';
+                if (Math.abs(centerX - mid) < 100) direction = Math.random() > 0.5 ? 'left' : 'right';
+                cloud.classList.add('splitting');
+                const yShift = (Math.random() - 0.5) * 80;
+                if (direction === 'left') {
+                    cloud.style.transform = `translateX(-150vw) translateY(${yShift}px) scale(0.7) rotate(-2deg)`;
+                } else {
+                    cloud.style.transform = `translateX(150vw) translateY(${yShift}px) scale(0.7) rotate(2deg)`;
+                }
+                cloud.style.opacity = '0';
+            });
+            
+            wisps.forEach(w => {
+                w.classList.add('splitting');
+                const drift = Math.random() > 0.5 ? -300 : 300;
+                w.style.transform = `translateX(${drift}%) rotate(5deg)`;
+                w.style.opacity = '0';
+            });
+            
+            birds.forEach(bird => {
+                bird.classList.add('splitting');
+                const dir = bird.classList.contains('bird-2') ? -1 : 1;
+                bird.style.transform = `translateX(${dir * 200}vw) translateY(-50px) scale(0.3)`;
+                bird.style.opacity = '0';
+            });
+            
+            setTimeout(() => {
+                if (intro && intro.parentNode) {
+                    intro.style.opacity = '0';
+                    setTimeout(() => {
+                        intro.remove();
+                        document.body.style.overflow = '';
+                        const blocker = document.getElementById('intro-temp-block');
+                        if (blocker) blocker.remove();
+                    }, 350);
+                }
+            }, 1000);
+        }
+        
+        // initialization with blurred preview of main page visible underneath
+        (async function init() {
+            document.body.style.overflow = 'hidden';
+            await loadGallery();
+            // block interactions on main content during intro
+            const blocker = document.createElement('style');
+            blocker.id = 'intro-temp-block';
+            blocker.textContent = `.intro-sky ~ *:not(.intro-sky) { pointer-events: none; }`;
+            document.head.appendChild(blocker);
+            setTimeout(() => {
+                startSplitTransition().catch(e => {
+                    console.warn(e);
+                    const introDiv = document.getElementById('introSky');
+                    if (introDiv) introDiv.remove();
+                    document.body.style.overflow = '';
+                    if (blocker) blocker.remove();
+                });
+            }, 100);
+            // safety cleanup
+            setTimeout(() => {
+                const leftover = document.getElementById('introSky');
+                if (leftover) { leftover.remove(); document.body.style.overflow = ''; }
+                if (document.getElementById('intro-temp-block')) document.getElementById('intro-temp-block').remove();
+            }, 4500);
+        })();
+    </script>
+</body>
+</html>
