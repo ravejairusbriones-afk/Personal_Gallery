@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Minimalist Gallery · Ethereal Skies</title>
     <style>
-        /* ----- RESET & BASE (preserved & enhanced) ----- */
+        /* ----- RESET & BASE (preserved) ----- */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background-color: #0e0e0e;
@@ -15,7 +15,7 @@
             overflow-x: hidden;
         }
         
-        /* ----- ORIGINAL GALLERY STYLES (untouched but refined) ----- */
+        /* ----- ORIGINAL GALLERY STYLES (untouched) ----- */
         #upload-trigger { position: fixed; top: 20px; left: 20px; background: rgba(14,14,14,0.8); backdrop-filter: blur(4px); color: white; border: 1px solid #555; padding: 8px 16px; cursor: pointer; z-index: 1000; text-transform: uppercase; font-size: 12px; border-radius: 40px; transition: all 0.2s; }
         #upload-trigger:hover { border-color: white; background: #1a1a1a; }
         #login-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(20,20,20,0.95); backdrop-filter: blur(12px); padding: 30px; border: 1px solid rgba(255,255,255,0.2); z-index: 2000; border-radius: 20px; color: white; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
@@ -37,233 +37,52 @@
         .large-box { grid-row: span 2; }
         .bottom-row { grid-column: span 2; display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }
         
-        /* ----- ENHANCED INTRO: BLURRED PREVIEW BACKGROUND + CLOUDS + BIRDS ----- */
-        .intro-sky {
+        /* ----- INTRO OVERLAY (from Briones) ----- */
+        #intro-overlay {
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 20000;
-            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            z-index: 99999;
+            background: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 1;
+            transition: opacity 1.8s cubic-bezier(0.4, 0, 0.2, 1);
             pointer-events: auto;
-            backdrop-filter: blur(12px) brightness(0.85);
-            background-color: rgba(10, 12, 18, 0.4);
+        }
+        #intro-overlay canvas {
+            display: block;
+        }
+        #white-curtain {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #ffffff;
+            z-index: 10;
+            pointer-events: none;
             transition: opacity 0.4s ease;
-        }
-        
-        /* subtle animated gradient overlay for extra depth (still shows blurred bg underneath) */
-        .intro-overlay-glow {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle at 30% 40%, rgba(80,100,140,0.2), rgba(0,0,0,0.3));
-            pointer-events: none;
-            mix-blend-mode: overlay;
-            animation: gentlePulse 8s infinite alternate;
-        }
-        
-        @keyframes gentlePulse {
-            0% { opacity: 0.4; }
-            100% { opacity: 0.8; }
-        }
-        
-        /* cloud layers */
-        .cloud-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-        }
-        
-        .cloud {
-            position: absolute;
-            background: radial-gradient(ellipse at 30% 40%, rgba(255,255,250,0.88), rgba(210,220,245,0.7));
-            border-radius: 1000px;
-            filter: blur(0.4px);
-            box-shadow: 0 20px 35px -8px rgba(0,0,0,0.2), inset 0 1px 1px rgba(255,255,255,0.5);
-            backdrop-filter: blur(2px);
-            will-change: transform, opacity;
-        }
-        
-        .cloud::before, .cloud::after {
-            content: '';
-            position: absolute;
-            background: inherit;
-            border-radius: 50%;
-            box-shadow: inherit;
-        }
-        
-        /* far, mid, front layers */
-        .cloud-far { background: radial-gradient(ellipse at 30% 35%, rgba(200,215,250,0.6), rgba(150,170,220,0.45)); backdrop-filter: blur(6px); filter: blur(1.5px); }
-        .cloud-mid { background: radial-gradient(ellipse at 35% 45%, rgba(255,250,240,0.85), rgba(210,220,245,0.7)); backdrop-filter: blur(1px); }
-        .cloud-front { background: radial-gradient(ellipse at 40% 50%, rgba(255,255,250,0.95), rgba(235,240,255,0.85)); box-shadow: 0 12px 28px -5px rgba(0,0,0,0.2); }
-        
-        /* cloud shapes & positions (rich set) */
-        .cloud-1 { width: 260px; height: 130px; top: 12%; left: -8%; }
-        .cloud-1::before { width: 110px; height: 110px; top: -45px; left: 25px; }
-        .cloud-1::after { width: 150px; height: 150px; top: -55px; left: 100px; }
-        
-        .cloud-2 { width: 340px; height: 160px; bottom: 18%; right: -5%; }
-        .cloud-2::before { width: 150px; height: 150px; top: -65px; left: 30px; }
-        .cloud-2::after { width: 120px; height: 120px; top: -35px; left: 180px; }
-        
-        .cloud-3 { width: 220px; height: 105px; top: 42%; left: 18%; }
-        .cloud-3::before { width: 95px; height: 95px; top: -35px; left: 20px; }
-        .cloud-3::after { width: 130px; height: 130px; top: -50px; left: 90px; }
-        
-        .cloud-4 { width: 380px; height: 170px; top: 68%; right: 8%; }
-        .cloud-4::before { width: 170px; height: 170px; top: -75px; left: 40px; }
-        .cloud-4::after { width: 130px; height: 130px; top: -30px; left: 210px; }
-        
-        .cloud-5 { width: 190px; height: 90px; top: 28%; right: 15%; }
-        .cloud-5::before { width: 85px; height: 85px; top: -30px; left: 15px; }
-        .cloud-5::after { width: 110px; height: 110px; top: -40px; left: 80px; }
-        
-        .cloud-6 { width: 280px; height: 125px; bottom: 8%; left: 12%; }
-        .cloud-6::before { width: 120px; height: 120px; top: -50px; left: 20px; }
-        .cloud-6::after { width: 100px; height: 100px; top: -25px; left: 150px; }
-        
-        .cloud-7 { width: 210px; height: 95px; top: 80%; left: 42%; }
-        .cloud-7::before { width: 85px; height: 85px; top: -30px; left: 20px; }
-        .cloud-7::after { width: 100px; height: 100px; top: -40px; left: 95px; }
-        
-        .cloud-8 { width: 300px; height: 140px; top: 8%; right: 28%; }
-        .cloud-8::before { width: 140px; height: 140px; top: -60px; left: 30px; }
-        .cloud-8::after { width: 110px; height: 110px; top: -20px; left: 160px; }
-        
-        .cloud-9 { width: 260px; height: 115px; bottom: 45%; left: 65%; }
-        .cloud-9::before { width: 105px; height: 105px; top: -45px; left: 25px; }
-        .cloud-9::after { width: 125px; height: 125px; top: -55px; left: 115px; }
-        
-        .cloud-10 { width: 320px; height: 150px; top: 55%; left: -3%; }
-        .cloud-10::before { width: 140px; height: 140px; top: -60px; left: 25px; }
-        .cloud-10::after { width: 160px; height: 160px; top: -70px; left: 140px; }
-        
-        /* wispy cirrus */
-        .wisp {
-            position: absolute;
-            background: rgba(255,255,245,0.3);
-            filter: blur(18px);
-            border-radius: 200px;
-            pointer-events: none;
-        }
-        .wisp-1 { width: 450px; height: 70px; top: 15%; left: -80px; background: rgba(210,220,250,0.35); filter: blur(20px); }
-        .wisp-2 { width: 600px; height: 80px; bottom: 5%; right: -120px; transform: rotate(3deg); background: rgba(190,200,240,0.25); filter: blur(28px);}
-        .wisp-3 { width: 380px; height: 60px; top: 45%; left: 35%; background: rgba(235,235,255,0.25); filter: blur(24px);}
-        
-        /* ----- MINIMALIST BIRDS (elegant silhouettes) ----- */
-        .bird {
-            position: absolute;
-            width: 40px;
-            height: 30px;
-            pointer-events: none;
-            z-index: 5;
-            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.2));
-        }
-        .bird svg {
-            width: 100%;
-            height: 100%;
-            fill: rgba(30, 35, 45, 0.75);
-            transition: fill 0.2s;
-        }
-        /* bird flight paths */
-        .bird-1 { top: 20%; left: -10%; animation: flyBird1 12s linear infinite; }
-        .bird-2 { top: 60%; left: 110%; animation: flyBird2 14s linear infinite reverse; }
-        .bird-3 { top: 40%; left: -5%; animation: flyBird3 10s ease-in-out infinite; }
-        
-        @keyframes flyBird1 {
-            0% { transform: translateX(0) translateY(0) scaleX(1); }
-            25% { transform: translateX(35vw) translateY(-30px) scaleX(1); }
-            50% { transform: translateX(70vw) translateY(10px) scaleX(1); }
-            75% { transform: translateX(105vw) translateY(-20px) scaleX(1); }
-            100% { transform: translateX(140vw) translateY(0) scaleX(1); }
-        }
-        @keyframes flyBird2 {
-            0% { transform: translateX(0) translateY(0) scaleX(-1); }
-            30% { transform: translateX(-35vw) translateY(25px) scaleX(-1); }
-            70% { transform: translateX(-75vw) translateY(-15px) scaleX(-1); }
-            100% { transform: translateX(-110vw) translateY(10px) scaleX(-1); }
-        }
-        @keyframes flyBird3 {
-            0% { transform: translateX(0) translateY(0) scaleX(1); }
-            20% { transform: translateX(20vw) translateY(-20px) scaleX(1); }
-            40% { transform: translateX(45vw) translateY(5px) scaleX(1); }
-            60% { transform: translateX(70vw) translateY(-10px) scaleX(1); }
-            80% { transform: translateX(95vw) translateY(15px) scaleX(1); }
-            100% { transform: translateX(125vw) translateY(0) scaleX(1); }
-        }
-        
-        /* float animations for clouds */
-        @keyframes floatSlow { 0% { transform: translateY(0px); } 100% { transform: translateY(-18px) translateX(6px); } }
-        @keyframes floatMid { 0% { transform: translateY(0px); } 100% { transform: translateY(14px) translateX(-8px); } }
-        @keyframes floatFast { 0% { transform: translateY(0px); } 100% { transform: translateY(-10px) translateX(5px); } }
-        .cloud { animation: floatSlow 6s infinite alternate ease-in-out; }
-        .cloud-2, .cloud-6, .cloud-9 { animation: floatMid 7s infinite alternate ease-in-out; }
-        .cloud-4, .cloud-8, .cloud-10 { animation: floatFast 5s infinite alternate ease-in-out; }
-        
-        /* split transition */
-        .cloud.splitting, .bird.splitting {
-            animation: none !important;
-            transition: transform 0.9s cubic-bezier(0.2, 0.9, 0.3, 1.2), opacity 0.8s ease-out !important;
-        }
-        .wisp.splitting {
-            transition: transform 0.9s cubic-bezier(0.2,0.9,0.4,1), opacity 0.7s ease-out !important;
-        }
-        
-        @media (max-width: 800px) {
-            .cloud { transform: scale(0.7); }
-            .bird { transform: scale(0.6); }
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Three.js import map for the intro animation -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
 </head>
 <body style="overflow: hidden;">
-
-    <!-- INTRO OVERLAY: blurred preview of main page + clouds + birds -->
-    <div id="introSky" class="intro-sky">
-        <div class="intro-overlay-glow"></div>
-        <div class="cloud-layer">
-            <!-- far clouds -->
-            <div class="cloud cloud-far cloud-2"></div>
-            <div class="cloud cloud-far cloud-6"></div>
-            <!-- mid clouds -->
-            <div class="cloud cloud-mid cloud-1"></div>
-            <div class="cloud cloud-mid cloud-4"></div>
-            <div class="cloud cloud-mid cloud-7"></div>
-            <div class="cloud cloud-mid cloud-9"></div>
-            <!-- foreground clouds -->
-            <div class="cloud cloud-front cloud-3"></div>
-            <div class="cloud cloud-front cloud-5"></div>
-            <div class="cloud cloud-front cloud-8"></div>
-            <div class="cloud cloud-front cloud-10"></div>
-            <!-- wisps -->
-            <div class="wisp wisp-1"></div>
-            <div class="wisp wisp-2"></div>
-            <div class="wisp wisp-3"></div>
-        </div>
-        <!-- minimal birds: silhouettes adding life -->
-        <div class="bird bird-1">
-            <svg viewBox="0 0 40 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M2,15 Q10,5 20,15 Q30,5 38,15 Q30,20 20,18 Q10,20 2,15Z" fill="#2c2e3a" opacity="0.7"/>
-                <path d="M8,14 L14,12 L12,16 Z" fill="#2c2e3a"/>
-                <path d="M32,14 L26,12 L28,16 Z" fill="#2c2e3a"/>
-            </svg>
-        </div>
-        <div class="bird bird-2">
-            <svg viewBox="0 0 40 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M2,15 Q10,5 20,15 Q30,5 38,15 Q30,20 20,18 Q10,20 2,15Z" fill="#2d2f3c" opacity="0.65"/>
-            </svg>
-        </div>
-        <div class="bird bird-3">
-            <svg viewBox="0 0 36 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M1,13 Q8,4 18,13 Q28,4 35,13 Q28,18 18,16 Q8,18 1,13Z" fill="#202230" opacity="0.8"/>
-            </svg>
-        </div>
+    <!-- INTRO OVERLAY (white background with Three.js canvas) -->
+    <div id="intro-overlay">
+        <div id="white-curtain"></div>
     </div>
 
     <!-- ORIGINAL PAGE CONTENT (gallery, nav, etc.) -->
@@ -314,7 +133,6 @@
                 document.getElementById('main-content').innerHTML = data.content;
             } else {
                 if (error && error.code !== 'PGRST116') console.error(error);
-                // beautiful default cats
                 document.getElementById('main-content').innerHTML = `
                     <div class="box large-box"><img src="https://images.pexels.com/photos/1276553/cat-whiskers-animal-feline-1276553.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Elegant cat"></div>
                     <div class="box"><img src="https://images.pexels.com/photos/2071882/pexels-photo-2071882.jpeg?auto=compress&cs=tinysrgb&w=600" alt="Siamese gaze"></div>
@@ -411,84 +229,293 @@
             document.getElementById('overlay').style.display = 'none';
         };
 
-        // ----- SPLIT TRANSITION WITH BIRDS & CLOUDS -----
-        async function startSplitTransition() {
-            const intro = document.getElementById('introSky');
-            const clouds = Array.from(document.querySelectorAll('.intro-sky .cloud'));
-            const wisps = Array.from(document.querySelectorAll('.intro-sky .wisp'));
-            const birds = Array.from(document.querySelectorAll('.intro-sky .bird'));
-            const allMoving = [...clouds, ...wisps, ...birds];
-            
-            await new Promise(resolve => setTimeout(resolve, 2500)); // 2.5s of beauty
-            
-            // apply split directions dynamically
-            clouds.forEach(cloud => {
-                const rect = cloud.getBoundingClientRect();
-                const centerX = rect.left + rect.width / 2;
-                const mid = window.innerWidth / 2;
-                let direction = centerX < mid ? 'left' : 'right';
-                if (Math.abs(centerX - mid) < 100) direction = Math.random() > 0.5 ? 'left' : 'right';
-                cloud.classList.add('splitting');
-                const yShift = (Math.random() - 0.5) * 80;
-                if (direction === 'left') {
-                    cloud.style.transform = `translateX(-150vw) translateY(${yShift}px) scale(0.7) rotate(-2deg)`;
-                } else {
-                    cloud.style.transform = `translateX(150vw) translateY(${yShift}px) scale(0.7) rotate(2deg)`;
-                }
-                cloud.style.opacity = '0';
-            });
-            
-            wisps.forEach(w => {
-                w.classList.add('splitting');
-                const drift = Math.random() > 0.5 ? -300 : 300;
-                w.style.transform = `translateX(${drift}%) rotate(5deg)`;
-                w.style.opacity = '0';
-            });
-            
-            birds.forEach(bird => {
-                bird.classList.add('splitting');
-                const dir = bird.classList.contains('bird-2') ? -1 : 1;
-                bird.style.transform = `translateX(${dir * 200}vw) translateY(-50px) scale(0.3)`;
-                bird.style.opacity = '0';
-            });
-            
-            setTimeout(() => {
-                if (intro && intro.parentNode) {
-                    intro.style.opacity = '0';
-                    setTimeout(() => {
-                        intro.remove();
-                        document.body.style.overflow = '';
-                        const blocker = document.getElementById('intro-temp-block');
-                        if (blocker) blocker.remove();
-                    }, 350);
-                }
-            }, 1000);
+        // Load gallery content immediately (it will be revealed as the intro fades out)
+        loadGallery();
+    </script>
+
+    <!-- INTRO ANIMATION (Three.js zoom with cloud physics, extracted from Briones) -->
+    <script type="module">
+        // --- 1. Imports ---
+        import * as THREE from 'three';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+
+        // --- 2. 3D Simplex Noise ---
+        const grad3 = [
+            [1,1,0],[-1,1,0],[1,-1,0],[-1,-1,0],
+            [1,0,1],[-1,0,1],[1,0,-1],[-1,0,-1],
+            [0,1,1],[0,-1,1],[0,1,-1],[0,-1,-1]
+        ];
+        const p = Array.from({length:256},()=>Math.floor(Math.random()*256));
+        const perm = new Array(512);
+        for (let i=0;i<512;i++) perm[i]=p[i&255];
+
+        function dot3(g,x,y,z) { return g[0]*x+g[1]*y+g[2]*z; }
+
+        function noise3D(xin,yin,zin) {
+            let n0,n1,n2,n3;
+            const F3=1/3,G3=1/6;
+            const s=(xin+yin+zin)*F3;
+            const i=Math.floor(xin+s),j=Math.floor(yin+s),k=Math.floor(zin+s);
+            const t=(i+j+k)*G3;
+            const X0=i-t,Y0=j-t,Z0=k-t;
+            const x0=xin-X0,y0=yin-Y0,z0=zin-Z0;
+            let i1,j1,k1,i2,j2,k2;
+            if(x0>=y0){
+                if(y0>=z0){i1=1;j1=0;k1=0;i2=1;j2=1;k2=0;}
+                else if(x0>=z0){i1=1;j1=0;k1=0;i2=1;j2=0;k2=1;}
+                else{i1=0;j1=0;k1=1;i2=1;j2=0;k2=1;}
+            }else{
+                if(y0<z0){i1=0;j1=0;k1=1;i2=0;j2=1;k2=1;}
+                else if(x0<z0){i1=0;j1=0;k1=1;i2=0;j2=1;k2=1;}
+                else{i1=0;j1=1;k1=0;i2=1;j2=1;k2=0;}
+            }
+            const x1=x0-i1+G3, y1=y0-j1+G3, z1=z0-k1+G3;
+            const x2=x0-i2+2*G3, y2=y0-j2+2*G3, z2=z0-k2+2*G3;
+            const x3=x0-1+3*G3, y3=y0-1+3*G3, z3=z0-1+3*G3;
+            const ii=i&255,jj=j&255,kk=k&255;
+            let t0=0.6-x0*x0-y0*y0-z0*z0;
+            if(t0<0)n0=0;else{t0*=t0;n0=t0*t0*dot3(grad3[perm[ii+perm[jj+perm[kk]]]%12],x0,y0,z0);}
+            let t1=0.6-x1*x1-y1*y1-z1*z1;
+            if(t1<0)n1=0;else{t1*=t1;n1=t1*t1*dot3(grad3[perm[ii+i1+perm[jj+j1+perm[kk+k1]]]%12],x1,y1,z1);}
+            let t2=0.6-x2*x2-y2*y2-z2*z2;
+            if(t2<0)n2=0;else{t2*=t2;n2=t2*t2*dot3(grad3[perm[ii+i2+perm[jj+j2+perm[kk+k2]]]%12],x2,y2,z2);}
+            let t3=0.6-x3*x3-y3*y3-z3*z3;
+            if(t3<0)n3=0;else{t3*=t3;n3=t3*t3*dot3(grad3[perm[ii+1+perm[jj+1+perm[kk+1]]]%12],x3,y3,z3);}
+            return 32*(n0+n1+n2+n3);
         }
-        
-        // initialization with blurred preview of main page visible underneath
-        (async function init() {
-            document.body.style.overflow = 'hidden';
-            await loadGallery();
-            // block interactions on main content during intro
-            const blocker = document.createElement('style');
-            blocker.id = 'intro-temp-block';
-            blocker.textContent = `.intro-sky ~ *:not(.intro-sky) { pointer-events: none; }`;
-            document.head.appendChild(blocker);
-            setTimeout(() => {
-                startSplitTransition().catch(e => {
-                    console.warn(e);
-                    const introDiv = document.getElementById('introSky');
-                    if (introDiv) introDiv.remove();
-                    document.body.style.overflow = '';
-                    if (blocker) blocker.remove();
-                });
-            }, 100);
-            // safety cleanup
-            setTimeout(() => {
-                const leftover = document.getElementById('introSky');
-                if (leftover) { leftover.remove(); document.body.style.overflow = ''; }
-                if (document.getElementById('intro-temp-block')) document.getElementById('intro-temp-block').remove();
-            }, 4500);
+
+        // --- 3. Cloud Textures ---
+        function createEtchedCloudTexture(w,h,drawShapeFn){
+            const canvas=document.createElement('canvas');
+            canvas.width=w;canvas.height=h;
+            const ctx=canvas.getContext('2d');
+            ctx.save();
+            ctx.beginPath();
+            drawShapeFn(ctx,w/2,h/2);
+            ctx.closePath();
+            ctx.fillStyle='#ffffff';
+            ctx.fill();
+            ctx.clip();
+            ctx.strokeStyle='rgba(130,190,195,0.7)';
+            ctx.lineWidth=2;
+            const spacing=6;
+            for(let y=-h;y<h*1.5;y+=spacing){
+                ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y+w);ctx.stroke();
+                ctx.beginPath();ctx.moveTo(0,y+spacing/2);ctx.lineTo(w,y+w+spacing/2);ctx.stroke();
+                ctx.beginPath();ctx.moveTo(w,y);ctx.lineTo(0,y+w);ctx.stroke();
+            }
+            ctx.restore();
+            ctx.beginPath();
+            drawShapeFn(ctx,w/2,h/2);
+            ctx.closePath();
+            ctx.strokeStyle='#8abdc2';
+            ctx.lineWidth=3.5;
+            ctx.stroke();
+            return new THREE.CanvasTexture(canvas);
+        }
+        const drawCloudA=(ctx,cx,cy)=>{const r=30;ctx.arc(cx,cy,r,0,Math.PI*2);ctx.arc(cx-25,cy-15,r*0.7,0,Math.PI*2);ctx.arc(cx+25,cy-10,r*0.8,0,Math.PI*2);ctx.arc(cx-15,cy+25,r*0.6,0,Math.PI*2);ctx.arc(cx+15,cy+20,r*0.6,0,Math.PI*2);ctx.arc(cx,cy-25,r*0.5,0,Math.PI*2);};
+        const drawCloudB=(ctx,cx,cy)=>{const r=25;ctx.arc(cx,cy,r,0,Math.PI*2);ctx.arc(cx-35,cy-5,r*0.8,0,Math.PI*2);ctx.arc(cx+35,cy-5,r*0.8,0,Math.PI*2);ctx.arc(cx-15,cy-20,r*0.6,0,Math.PI*2);ctx.arc(cx+15,cy-20,r*0.6,0,Math.PI*2);ctx.arc(cx-20,cy+20,r*0.5,0,Math.PI*2);ctx.arc(cx+20,cy+20,r*0.5,0,Math.PI*2);};
+        const drawCloudC=(ctx,cx,cy)=>{const r=22;ctx.arc(cx,cy,r,0,Math.PI*2);ctx.arc(cx-20,cy-10,r*0.6,0,Math.PI*2);ctx.arc(cx+20,cy-10,r*0.7,0,Math.PI*2);ctx.arc(cx,cy+25,r*0.5,0,Math.PI*2);ctx.arc(cx-15,cy+15,r*0.4,0,Math.PI*2);};
+        const textureA=createEtchedCloudTexture(256,256,drawCloudA);
+        const textureB=createEtchedCloudTexture(256,256,drawCloudB);
+        const textureC=createEtchedCloudTexture(256,256,drawCloudC);
+
+        // --- 4. Scene Setup ---
+        const introOverlay = document.getElementById('intro-overlay');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
+        camera.position.set(0,0,400);
+        camera.lookAt(0,0,0);
+
+        const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true, powerPreference:"high-performance"});
+        renderer.setClearColor(0x000000,0);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+        renderer.toneMapping=THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure=1.2;
+        introOverlay.appendChild(renderer.domElement);
+
+        // --- 5. Post-Processing ---
+        const composer = new EffectComposer(renderer);
+        composer.addPass(new RenderPass(scene,camera));
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth,window.innerHeight),1.1,0.5,0.1);
+        composer.addPass(bloomPass);
+
+        const RadialBlurShader = {
+            uniforms:{
+                tDiffuse:{value:null},
+                uZoomIntensity:{value:0.0},
+                uResolution:{value:new THREE.Vector2(window.innerWidth,window.innerHeight)}
+            },
+            vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+            fragmentShader:`uniform sampler2D tDiffuse;uniform float uZoomIntensity;uniform vec2 uResolution;varying vec2 vUv;void main(){vec2 center=vec2(0.5,0.5);vec2 uv=vUv;vec2 dir=uv-center;float dist=length(dir);vec4 color=texture2D(tDiffuse,uv);for(float i=1.0;i<=8.0;i++){float offset=uZoomIntensity*i*0.006*dist;vec2 sampleUV=uv-dir*offset;color+=texture2D(tDiffuse,sampleUV);}gl_FragColor=color/9.0;}`
+        };
+        const radialBlurPass = new ShaderPass(RadialBlurShader);
+        radialBlurPass.renderToScreen=true;
+        composer.addPass(radialBlurPass);
+
+        // --- 6. Particles ---
+        const CLOUD_COUNT=700;
+        const cloudSprites=[];
+        const textures=[textureA,textureB,textureC];
+        const pos=new Float32Array(CLOUD_COUNT*3);
+        const vel=new Float32Array(CLOUD_COUNT*3);
+        for(let i=0;i<CLOUD_COUNT;i++){
+            const x=(Math.random()-0.5)*1200;
+            const y=(Math.random()-0.5)*900;
+            const z=(Math.random()-0.5)*300;
+            pos[i*3]=x;pos[i*3+1]=y;pos[i*3+2]=z;
+            vel[i*3]=0;vel[i*3+1]=0;vel[i*3+2]=0;
+            const material = new THREE.SpriteMaterial({
+                map:textures[Math.floor(Math.random()*textures.length)],
+                transparent:true, opacity:0.95, depthTest:true, depthWrite:false, blending:THREE.NormalBlending
+            });
+            const sprite = new THREE.Sprite(material);
+            sprite.position.set(x,y,z);
+            const baseScale = 60+Math.random()*50;
+            sprite.scale.set(baseScale,baseScale,1);
+            sprite.userData.baseScale=baseScale;
+            scene.add(sprite);
+            cloudSprites.push(sprite);
+        }
+
+        // Stardust
+        const dustCount=2000;
+        const dustGeo=new THREE.BufferGeometry();
+        const dustPos=new Float32Array(dustCount*3);
+        const dustSizes=new Float32Array(dustCount);
+        const dustVel=new Float32Array(dustCount*3);
+        for(let i=0;i<dustCount;i++){
+            dustPos[i*3]=(Math.random()-0.5)*2000;
+            dustPos[i*3+1]=(Math.random()-0.5)*1500;
+            dustPos[i*3+2]=(Math.random()-0.5)*600-300;
+            dustSizes[i]=2+Math.random()*8;
+            dustVel[i*3]=(Math.random()-0.5)*0.5;
+            dustVel[i*3+1]=(Math.random()-0.5)*0.5;
+            dustVel[i*3+2]=(Math.random()-0.5)*0.2;
+        }
+        dustGeo.setAttribute('position',new THREE.BufferAttribute(dustPos,3));
+        dustGeo.setAttribute('size',new THREE.BufferAttribute(dustSizes,1));
+        const dustMat=new THREE.PointsMaterial({color:0xffffff,size:3.5,transparent:true,opacity:0.4,blending:THREE.AdditiveBlending,depthWrite:false,sizeAttenuation:true});
+        const dustSystem=new THREE.Points(dustGeo,dustMat);
+        scene.add(dustSystem);
+
+        // --- 7. Animation Loop ---
+        let time=0;
+        const clock=new THREE.Clock();
+        let animationId=null;
+        let zoomComplete=false;
+        const ZOOM_START=0.5, ZOOM_DURATION=1.2, START_Z=400, END_Z=50;
+
+        function easeInQuad(t){return t*t;}
+
+        function animate(){
+            const delta=clock.getDelta();
+            time+=delta;
+
+            // Swift zoom
+            if(time<ZOOM_START){
+                camera.position.z=START_Z;
+            }else{
+                const elapsed=time-ZOOM_START;
+                const t=Math.min(elapsed/ZOOM_DURATION,1.0);
+                const eased=easeInQuad(t);
+                camera.position.z=START_Z-eased*(START_Z-END_Z);
+                let intensity=0;
+                if(t<1.0) intensity=t*2.5;
+                else intensity=Math.max(0,2.5-(time-(ZOOM_START+ZOOM_DURATION))*6.0);
+                radialBlurPass.uniforms.uZoomIntensity.value=intensity;
+
+                // When zoom completes, start fading out the overlay
+                if(t>=1.0 && !zoomComplete){
+                    zoomComplete=true;
+                    introOverlay.style.opacity='0';
+                    introOverlay.style.pointerEvents='none';
+                }
+            }
+            camera.lookAt(0,0,0);
+
+            // Cloud physics (identical to original)
+            const MAX_DIST=650;
+            for(let i=0;i<CLOUD_COUNT;i++){
+                const i3=i*3;
+                let x=pos[i3],y=pos[i3+1],z=pos[i3+2];
+                const dist=Math.sqrt(x*x+y*y+z*z)+0.01;
+                const expForce=0.015/(dist*0.08+1.0);
+                vel[i3]+=(x/dist)*expForce;
+                vel[i3+1]+=(y/dist)*expForce;
+                vel[i3+2]+=(z/dist)*expForce*0.4;
+                const vortexStr=0.012*(1.0-Math.min(dist/300,1.0));
+                vel[i3]+=-y*vortexStr+Math.sin(z*0.02+time*0.8)*0.03;
+                vel[i3+1]+=x*vortexStr+Math.cos(z*0.02+time*0.8)*0.03;
+                const n=noise3D(x*0.006,y*0.006,z*0.006+time*0.2);
+                vel[i3]+=n*0.8; vel[i3+1]+=n*0.8; vel[i3+2]+=n*0.3;
+                vel[i3]+=(Math.random()-0.5)*0.6;
+                vel[i3+1]+=(Math.random()-0.5)*0.6;
+                vel[i3+2]+=(Math.random()-0.5)*0.2;
+                vel[i3]*=0.98; vel[i3+1]*=0.98; vel[i3+2]*=0.98;
+                const speed=Math.sqrt(vel[i3]**2+vel[i3+1]**2+vel[i3+2]**2);
+                if(speed>22){const limit=22/speed; vel[i3]*=limit; vel[i3+1]*=limit; vel[i3+2]*=limit;}
+                pos[i3]+=vel[i3]*delta*30;
+                pos[i3+1]+=vel[i3+1]*delta*30;
+                pos[i3+2]+=vel[i3+2]*delta*30;
+                const sprite=cloudSprites[i];
+                sprite.position.set(pos[i3],pos[i3+1],pos[i3+2]);
+                const newDist=Math.sqrt(pos[i3]**2+pos[i3+1]**2+pos[i3+2]**2);
+                const scaleFactor=1.0+newDist*0.005;
+                sprite.scale.set(sprite.userData.baseScale*scaleFactor,sprite.userData.baseScale*scaleFactor,1);
+                let opacity=1.0;
+                if(newDist>MAX_DIST*0.5){
+                    opacity=1.0-(newDist-MAX_DIST*0.5)/(MAX_DIST*0.5);
+                    opacity=Math.max(0,Math.min(1,opacity));
+                }
+                sprite.material.opacity=opacity;
+            }
+
+            // Stardust
+            const dPos=dustSystem.geometry.attributes.position.array;
+            for(let i=0;i<dustCount;i++){
+                const i3=i*3;
+                dPos[i3]+=dustVel[i3]*delta*10+Math.sin(time*0.2+i)*0.05;
+                dPos[i3+1]+=dustVel[i3+1]*delta*10+Math.cos(time*0.2+i)*0.05;
+                dPos[i3+2]+=dustVel[i3+2]*delta*5;
+                if(Math.abs(dPos[i3])>1500) dPos[i3]*=-0.9;
+                if(Math.abs(dPos[i3+1])>1200) dPos[i3+1]*=-0.9;
+            }
+            dustSystem.geometry.attributes.position.needsUpdate=true;
+
+            composer.render();
+            animationId=requestAnimationFrame(animate);
+        }
+        animationId=requestAnimationFrame(animate);
+
+        // Cleanup after the overlay is fully hidden
+        setTimeout(()=>{
+            if(introOverlay.style.display!=='none'){
+                introOverlay.style.display='none';
+                if(animationId) cancelAnimationFrame(animationId);
+                renderer.dispose();
+                // Restore body scrolling
+                document.body.style.overflow = '';
+            }
+        },4500);
+    </script>
+
+    <!-- Quick white curtain fade-out (makes the white page flash minimal) -->
+    <script>
+        (function(){
+            setTimeout(function(){
+                var curtain=document.getElementById('white-curtain');
+                if(curtain){
+                    curtain.style.opacity='0';
+                    setTimeout(function(){
+                        if(curtain) curtain.style.display='none';
+                    },500);
+                }
+            },50);
         })();
     </script>
 </body>
